@@ -1,0 +1,22 @@
+{
+  "name": "divergent-trading-bot",
+  "version": "1.0.0",
+  "description": "Divergent Trading Bot Platform (HPS Quad Divergence Strategy)",
+  "main": "bot-platform.mjs",
+  "type": "module",
+  "scripts": {
+    "start": "node bot-platform.mjs",
+    "dev": "NODE_ENV=development node bot-platform.mjs"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "ccxt": "^4.3.89",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "nanoid": "^5.0.7"
+  },
+  "engines": {
+    "node": ">=18.x"
+  },
+  "license": "MIT"
+}
