@@ -20,7 +20,59 @@ const db = new Database(DB_FILE);
 const runningProcesses = new Map();
 
 // Create tables
-db.exec(`
+db.exec(`// Parse JSON
+app.use(express.json());
+
+// --- helpers ---
+const newId = () => nanoid(24);
+
+// --- AUTH: email-based signup + session token ---
+// POST /api/signup  { email, plan? }
+app.post('/api/signup', (req, res) => {
+  const { email, plan = 'free' } = req.body || {};
+  if (!email) return res.status(400).json({ error: 'email required' });
+
+  // create or reuse user
+  let user = db.prepare('SELECT id, email, plan FROM users WHERE email = ?').get(email);
+  if (!user) {
+    const id = newId();
+    db.prepare('INSERT INTO users (id, email, plan) VALUES (?,?,?)').run(id, email, plan);
+    user = { id, email, plan };
+  }
+
+  // issue session token
+  const token = newId();
+  db.prepare('INSERT INTO sessions (token, user_id) VALUES (?,?)').run(token, user.id);
+
+  res.json({ token, user });
+});
+
+// --- auth middleware (Bearer <token>) ---
+function requireAuth(req, res, next) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const sess = db.prepare('SELECT user_id FROM sessions WHERE token = ?').get(token);
+  if (!sess) return res.status(401).json({ error: 'Unauthorized' });
+  req.user = db.prepare('SELECT id, email, plan FROM users WHERE id = ?').get(sess.user_id);
+  next();
+}
+
+// --- simple status page for "/" ---
+app.get('/', (_req, res) => {
+  res.send('🚀 Trading Bot Server live. Try POST /api/signup then GET /api/strategies');
+});
+
+// --- strategies (public) ---
+app.get('/api/strategies', (_req, res) => {
+  res.json({
+    strategies: [
+      { id: 'rsi_macd_div', label: 'RSI+MACD Divergence' },
+      { id: 'hidden_div',   label: 'Hidden Divergence' },
+      { id: 'hps_quad',     label: 'HPS Quad Divergence' },
+    ],
+  });
+});
+
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
