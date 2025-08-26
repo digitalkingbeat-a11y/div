@@ -20,7 +20,48 @@ const db = new Database(DB_FILE);
 const runningProcesses = new Map();
 
 // Create tables
-db.exec(`// Parse JSON
+db.exec(`
+
+
+ CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    plan TEXT DEFAULT 'free',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id)
+  );
+
+  CREATE TABLE IF NOT EXISTS connections (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    exchange TEXT NOT NULL,
+    sandbox INTEGER DEFAULT 1,
+    api_key TEXT,
+    api_secret TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id)
+  );
+
+  CREATE TABLE IF NOT EXISTS bots (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    engine TEXT DEFAULT 'divergent',
+    symbol TEXT NOT NULL,
+    timeframe TEXT NOT NULL,
+    strategy_id TEXT NOT NULL,
+    status TEXT DEFAULT 'running',
+    pid TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id)
+  );
+`);
+// Parse JSON
 app.use(express.json());
 
 // --- helpers ---
@@ -72,45 +113,6 @@ app.get('/api/strategies', (_req, res) => {
     ],
   });
 });
-
-  CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    plan TEXT DEFAULT 'free',
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE IF NOT EXISTS sessions (
-    token TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users (id)
-  );
-
-  CREATE TABLE IF NOT EXISTS connections (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    exchange TEXT NOT NULL,
-    sandbox INTEGER DEFAULT 1,
-    api_key TEXT,
-    api_secret TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users (id)
-  );
-
-  CREATE TABLE IF NOT EXISTS bots (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    engine TEXT DEFAULT 'divergent',
-    symbol TEXT NOT NULL,
-    timeframe TEXT NOT NULL,
-    strategy_id TEXT NOT NULL,
-    status TEXT DEFAULT 'running',
-    pid TEXT NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users (id)
-  );
-`);
 
 const PLANS = {
   free: { name: 'Free', paperOnly: true },
