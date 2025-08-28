@@ -313,30 +313,29 @@ app.get('/api/logs/:botId', requireAuth, (req, res) => {
   const child = runningProcesses.get(bot.pid);
   if (!child) return res.status(410).end();
 
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Cache-Control, Authorization');
-  res.flushHeaders?.();
+ res.setHeader('Content-Type', 'text/event-stream');
+res.setHeader('Cache-Control', 'no-cache');
+res.setHeader('Connection', 'keep-alive');
+res.setHeader('Access-Control-Allow-Origin', '*');
+res.setHeader('Access-Control-Allow-Headers', 'Cache-Control, Authorization');
+res.flushHeaders?.();
 
-  const send = (line) => res.write(`data: ${line.toString().trim()}\n\n`);
-  
-  child.stdout?.on('data', send);
-  child.stderr?.on('data', send);
-  
-  const onExit = () => { 
-    res.write('event: end\n' + 'data: bot-exited\n\n'); 
-    res.end(); 
-  };
-  
-  child.once('exit', onExit);
-  
-  req.on('close', () => {
-    child.stdout?.off('data', send);
-    child.stderr?.off('data', send);
-    child.off('exit', onExit);
-  });
+const send = (line) => res.write(`data: ${line.toString().trim()}\n\n`);
+
+child.stdout?.on('data', send);
+child.stderr?.on('data', send);
+
+const onExit = () => {
+  res.write('event: end\n' + 'data: bot-exited\n\n');
+  res.end();
+};
+
+child.once('exit', onExit);
+
+req.on('close', () => {
+  child.stdout?.off('data', send);
+  child.stderr?.off('data', send);
+  child.off('exit', onExit);
 });
 
 app.listen(PORT, () => {
