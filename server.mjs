@@ -177,33 +177,29 @@ const DivergentEngine = {
     } else {
       console.log(`[DIV-${pid}] Process not found (may have already stopped)`);
     }
-  },
-};
-
-const app = express();
-
 // Middleware
 app.use(express.json({ limit: '1mb' }));
 
 // CORS for local development
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content, Accept, Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
 });
 
+// ✅ Only keep ONE definition of requireAuth
 function requireAuth(req, res, next) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
-  
+  const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+  if (!token) return res.status(401).json({ error: 'Missing token' });
+
   const session = db.prepare('SELECT user_id FROM sessions WHERE token = ?').get(token);
-  if (!session) return res.status(401).json({ error: 'Invalid token' });
-  
+  if (!session) return res.status(401).json({ error: 'Invalid session' });
+
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(session.user_id);
   if (!user) return res.status(401).json({ error: 'User not found' });
-  
+
   req.user = user;
   next();
 }
